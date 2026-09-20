@@ -1391,6 +1391,88 @@ function resetFilters() {
   }
 })();
 
+// ─── Auto-load latest xlsx from server (only when served via python serve.py) ─
+function autoLoadLatest() {
+  // Only attempt when served over http (not file://)
+  if (!window.location.protocol.startsWith("http")) return;
+
+  fetch("/latest-name")
+    .then(r => { if (!r.ok) throw new Error("no server API"); return r.json(); })
+    .then(({ filename }) => {
+      return fetch("/latest-xlsx")
+        .then(r => { if (!r.ok) throw new Error("fetch failed"); return r.arrayBuffer(); })
+        .then(buf => {
+          try {
+            const wb = XLSX.read(buf, { type: "array", cellDates: true });
+
+            // ── Parse AM Dashboard ────────────────────────────────────────────
+            const ws = wb.Sheets["AM Dashboard"];
+            if (!ws) return;
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+            let headerIdx = rows.findIndex(r => r && String(r[0] || "").trim() === "Business Units");
+            if (headerIdx === -1) headerIdx = rows.findIndex(r => r && String(r[0] || "").trim() === "Total") - 1;
+            if (headerIdx === -1) return;
+            const dataRows = rows.slice(headerIdx + 1).filter(r => r && String(r[0] || "").trim() !== "");
+            const parsed = dataRows.map(r => ({
+              bu:         String(r[0]).trim(),
+              identified: { target:+r[1]||0, actual:+r[2]||0, bw:+r[3]||0, attain:toDecimal(r[4]), yy:toDecimal(r[5]), ww:+r[6]||0 },
+              performed:  { target:+r[7]||0, rollover:+r[8]||0, cqClose:+r[9]||0, cqFuture:+r[10]||0, total:+r[11]||0, track:+r[12]||0, bwTrack:+r[13]||0, yy:toDecimal(r[14]), ww:+r[15]||0 },
+              togo:       { weekly:+r[16]||0, toGo:+r[17]||0 },
+              converted:  { target:+r[18]||0, qtd:+r[19]||0, track:+r[20]||0, bwTrack:+r[21]||0, attain:toDecimal(r[22]), yy:toDecimal(r[23]), ww:+r[24]||0 }
+            }));
+            if (!parsed.length || !parsed.find(d => d.bu === "Total")) return;
+
+            // ── Parse Top 25 ─────────────────────────────────────────────────
+            const ws2 = wb.Sheets["Top 25 Still PCW"];
+            const top25rows = ws2 ? XLSX.utils.sheet_to_json(ws2, { header: 1, defval: null }) : [];
+            const t25Hi = top25rows.findIndex(r => r && String(r[0] || "").trim() === "Customers");
+            const t25Start = t25Hi >= 0 ? t25Hi + 1 : 2;
+            const top25parsed = top25rows.slice(t25Start)
+              .filter(r => r && r[0] && String(r[0]).trim() && (+r[4] || 0) > 0)
+              .map(r => ({
+                customer: String(r[0]).trim(),
+                opp:      String(r[1] || "").trim(),
+                closeDate: r[2] instanceof Date ? r[2].toISOString().slice(0,10) : String(r[2]||"").slice(0,10),
+                market:   String(r[3] || "").trim(),
+                itd:      +r[4] || 0
+              }));
+
+            // ── Detect week & set prior period ────────────────────────────────
+            const wkMatch = filename.match(/[Ww][Kk]?(\d+)/i);
+            if (wkMatch) {
+              const wk = parseInt(wkMatch[1], 10);
+              const prior = Q2_PRIOR[wk];
+              if (prior) {
+                PRIOR_BU_DATA.length = 0;
+                prior.forEach(r => PRIOR_BU_DATA.push(r));
+                CURRENT_PRIOR_WEEK = wk;
+              }
+            }
+
+            // ── Update globals & re-render ────────────────────────────────────
+            BU_DATA.length = 0;
+            parsed.forEach(d => BU_DATA.push(d));
+            TOP25.length = 0;
+            top25parsed.forEach(r => TOP25.push(r));
+
+            const buSel = document.getElementById("bu-filter");
+            buSel.innerHTML = '<option value="ALL">All BUs</option>' +
+              BU_DATA.map(d => `<option value="${d.bu}">${d.bu}</option>`).join("");
+
+            document.getElementById("upload-label").textContent = filename;
+            resetFilters();
+            console.log("✅ Auto-loaded:", filename);
+          } catch(err) {
+            console.warn("Auto-load parse error:", err.message);
+          }
+        });
+    })
+    .catch(() => {
+      // Server API not available (e.g. opened as file://) — use pre-loaded data silently
+      console.info("ℹ️ No server detected — using pre-loaded data.");
+    });
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 renderKPIs(BU_DATA);
 renderBUTable(BU_DATA);
@@ -1398,6 +1480,9 @@ renderComments();
 renderTop25(TOP25);
 renderCharts(BU_DATA);
 updateCommentStatus();
+
+// Auto-load latest xlsx if running via python serve.py
+autoLoadLatest();
 </script>
 </body>
 </html>
