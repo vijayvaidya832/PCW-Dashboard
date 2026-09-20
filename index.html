@@ -606,15 +606,15 @@
         <thead>
           <tr>
             <th rowspan="2">Business Unit</th>
-            <th colspan="5" class="col-div">Identified $M</th>
-            <th colspan="6" class="col-div">Performed $M</th>
-            <th colspan="5" class="col-div">Converted $M</th>
+            <th colspan="6" class="col-div">Identified $M</th>
+            <th colspan="7" class="col-div">Performed $M</th>
+            <th colspan="6" class="col-div">Converted $M</th>
             <th class="col-div">To-Go</th>
           </tr>
           <tr>
-            <th class="col-div">Qtr Target</th><th>Identified</th><th>B(W)</th><th>Attain%</th><th>YTY%</th>
-            <th class="col-div">Qtr Target</th><th>Rollover</th><th>Total Perf</th><th>Perf Track</th><th>B(W) Track</th><th>YTY%</th>
-            <th class="col-div">Qtr Target</th><th>QTD Conv</th><th>B(W) Track</th><th>Attain%</th><th>YTY%</th>
+            <th class="col-div">Qtr Target</th><th>Identified</th><th>B(W)</th><th>Attain%</th><th>YTY%</th><th style="color:#0e7a6e;">QTQ%</th>
+            <th class="col-div">Qtr Target</th><th>Rollover</th><th>Total Perf</th><th>Perf Track</th><th>B(W) Track</th><th>YTY%</th><th style="color:#0e7a6e;">QTQ%</th>
+            <th class="col-div">Qtr Target</th><th>QTD Conv</th><th>B(W) Track</th><th>Attain%</th><th>YTY%</th><th style="color:#0e7a6e;">QTQ%</th>
             <th class="col-div">TO GO</th>
           </tr>
         </thead>
@@ -743,6 +743,20 @@ function loadXlsx() {
           itd:       +r[4] || 0
         }));
 
+      // ── Detect week number from filename and set prior period ─────────────
+      const wkMatch = file.name.match(/[Ww][Kk]?(\d+)/i);
+      if (wkMatch) {
+        const wk = parseInt(wkMatch[1], 10);
+        const prior = Q2_PRIOR[wk];
+        if (prior) {
+          PRIOR_BU_DATA.length = 0;
+          prior.forEach(r => PRIOR_BU_DATA.push(r));
+          CURRENT_PRIOR_WEEK = wk;
+        } else {
+          console.warn("No Q2 prior data found for week", wk);
+        }
+      }
+
       // ── Update global data and re-render ──────────────────────────────────
       BU_DATA.length = 0;
       parsed.forEach(d => BU_DATA.push(d));
@@ -764,6 +778,99 @@ function loadXlsx() {
   };
   reader.readAsArrayBuffer(file);
 }
+
+// ─── Q2 prior period lookup — keyed by week number ───────────────────────────
+// Source: AM Dashboard_Q2WkN.xlsx, columns C (Identified), L (Performed), T (Converted)
+const Q2_PRIOR = {
+  3: [
+    { bu:"Total",        identified:{actual:54.605}, performed:{total:24.975}, converted:{qtd:7.824} },
+    { bu:"CAN BU",       identified:{actual:1.797},  performed:{total:0.928},  converted:{qtd:0.049} },
+    { bu:"US DIS",       identified:{actual:13.402}, performed:{total:5.114},  converted:{qtd:1.005} },
+    { bu:"US FSS",       identified:{actual:6.378},  performed:{total:4.551},  converted:{qtd:1.574} },
+    { bu:"US PUB",       identified:{actual:13.783}, performed:{total:5.210},  converted:{qtd:0.163} },
+    { bu:"US COM IND BU",identified:{actual:18.674}, performed:{total:8.869},  converted:{qtd:4.940} },
+    { bu:"LA BU",        identified:{actual:0.570},  performed:{total:0.304},  converted:{qtd:0.093} }
+  ],
+  4: [
+    { bu:"Total",        identified:{actual:51.435}, performed:{total:27.197}, converted:{qtd:10.110} },
+    { bu:"CAN BU",       identified:{actual:1.934},  performed:{total:1.088},  converted:{qtd:0.067} },
+    { bu:"US DIS",       identified:{actual:13.501}, performed:{total:5.867},  converted:{qtd:1.083} },
+    { bu:"US FSS",       identified:{actual:6.640},  performed:{total:4.887},  converted:{qtd:2.745} },
+    { bu:"US PUB",       identified:{actual:14.365}, performed:{total:5.943},  converted:{qtd:0.772} },
+    { bu:"US COM IND BU",identified:{actual:14.435}, performed:{total:9.204},  converted:{qtd:5.313} },
+    { bu:"LA BU",        identified:{actual:0.559},  performed:{total:0.207},  converted:{qtd:0.130} }
+  ],
+  5: [
+    { bu:"Total",        identified:{actual:55.452}, performed:{total:29.866}, converted:{qtd:12.801} },
+    { bu:"CAN BU",       identified:{actual:2.028},  performed:{total:1.238},  converted:{qtd:0.078} },
+    { bu:"US DIS",       identified:{actual:14.062}, performed:{total:6.488},  converted:{qtd:1.181} },
+    { bu:"US FSS",       identified:{actual:8.712},  performed:{total:5.256},  converted:{qtd:2.795} },
+    { bu:"US PUB",       identified:{actual:9.483},  performed:{total:6.861},  converted:{qtd:1.597} },
+    { bu:"US COM IND BU",identified:{actual:20.550}, performed:{total:9.709},  converted:{qtd:6.974} },
+    { bu:"LA BU",        identified:{actual:0.617},  performed:{total:0.314},  converted:{qtd:0.177} }
+  ],
+  6: [
+    { bu:"Total",        identified:{actual:53.992}, performed:{total:33.579}, converted:{qtd:12.946} },
+    { bu:"CAN BU",       identified:{actual:3.094},  performed:{total:1.457},  converted:{qtd:0.085} },
+    { bu:"US DIS",       identified:{actual:13.692}, performed:{total:8.247},  converted:{qtd:1.180} },
+    { bu:"US FSS",       identified:{actual:8.854},  performed:{total:5.764},  converted:{qtd:2.812} },
+    { bu:"US PUB",       identified:{actual:10.927}, performed:{total:7.434},  converted:{qtd:1.636} },
+    { bu:"US COM IND BU",identified:{actual:16.791}, performed:{total:10.312}, converted:{qtd:7.043} },
+    { bu:"LA BU",        identified:{actual:0.635},  performed:{total:0.365},  converted:{qtd:0.190} }
+  ],
+  7: [
+    { bu:"Total",        identified:{actual:61.089}, performed:{total:37.258}, converted:{qtd:16.333} },
+    { bu:"CAN BU",       identified:{actual:3.666},  performed:{total:1.701},  converted:{qtd:0.998} },
+    { bu:"US DIS",       identified:{actual:15.543}, performed:{total:9.265},  converted:{qtd:1.890} },
+    { bu:"US FSS",       identified:{actual:8.907},  performed:{total:6.272},  converted:{qtd:3.164} },
+    { bu:"US PUB",       identified:{actual:14.152}, performed:{total:7.997},  converted:{qtd:1.833} },
+    { bu:"US COM IND BU",identified:{actual:18.136}, performed:{total:11.514}, converted:{qtd:8.097} },
+    { bu:"LA BU",        identified:{actual:0.685},  performed:{total:0.510},  converted:{qtd:0.351} }
+  ],
+  8: [
+    { bu:"Total",        identified:{actual:62.851}, performed:{total:41.556}, converted:{qtd:20.004} },
+    { bu:"CAN BU",       identified:{actual:3.905},  performed:{total:1.949},  converted:{qtd:1.079} },
+    { bu:"US DIS",       identified:{actual:14.004}, performed:{total:10.334}, converted:{qtd:4.325} },
+    { bu:"US FSS",       identified:{actual:10.911}, performed:{total:7.166},  converted:{qtd:3.298} },
+    { bu:"US PUB",       identified:{actual:15.403}, performed:{total:8.624},  converted:{qtd:2.267} },
+    { bu:"US COM IND BU",identified:{actual:17.919}, performed:{total:12.940}, converted:{qtd:8.681} },
+    { bu:"LA BU",        identified:{actual:0.709},  performed:{total:0.544},  converted:{qtd:0.355} }
+  ],
+  9: [
+    { bu:"Total",        identified:{actual:60.927}, performed:{total:44.906}, converted:{qtd:26.028} },
+    { bu:"CAN BU",       identified:{actual:3.550},  performed:{total:2.134},  converted:{qtd:1.471} },
+    { bu:"US DIS",       identified:{actual:14.024}, performed:{total:11.093}, converted:{qtd:6.787} },
+    { bu:"US FSS",       identified:{actual:9.355},  performed:{total:7.841},  converted:{qtd:3.743} },
+    { bu:"US PUB",       identified:{actual:14.132}, performed:{total:9.272},  converted:{qtd:2.507} },
+    { bu:"US COM IND BU",identified:{actual:18.853}, performed:{total:13.903}, converted:{qtd:11.057} },
+    { bu:"LA BU",        identified:{actual:1.012},  performed:{total:0.664},  converted:{qtd:0.462} }
+  ],
+  10: [
+    { bu:"Total",        identified:{actual:71.127}, performed:{total:48.346}, converted:{qtd:27.994} },
+    { bu:"CAN BU",       identified:{actual:3.718},  performed:{total:2.031},  converted:{qtd:1.332} },
+    { bu:"US DIS",       identified:{actual:16.557}, performed:{total:11.933}, converted:{qtd:7.940} },
+    { bu:"US FSS",       identified:{actual:12.755}, performed:{total:8.791},  converted:{qtd:4.153} },
+    { bu:"US PUB",       identified:{actual:15.586}, performed:{total:10.284}, converted:{qtd:2.608} },
+    { bu:"US COM IND BU",identified:{actual:21.145}, performed:{total:14.427}, converted:{qtd:11.296} },
+    { bu:"LA BU",        identified:{actual:1.366},  performed:{total:0.880},  converted:{qtd:0.666} }
+  ],
+  11: [
+    { bu:"Total",        identified:{actual:69.714}, performed:{total:54.964}, converted:{qtd:29.156} },
+    { bu:"CAN BU",       identified:{actual:3.438},  performed:{total:2.294},  converted:{qtd:1.033} },
+    { bu:"US DIS",       identified:{actual:14.488}, performed:{total:13.046}, converted:{qtd:8.901} },
+    { bu:"US FSS",       identified:{actual:13.266}, performed:{total:9.417},  converted:{qtd:4.153} },
+    { bu:"US PUB",       identified:{actual:15.262}, performed:{total:12.823}, converted:{qtd:2.687} },
+    { bu:"US COM IND BU",identified:{actual:21.991}, performed:{total:16.337}, converted:{qtd:11.564} },
+    { bu:"LA BU",        identified:{actual:1.269},  performed:{total:1.048},  converted:{qtd:0.819} }
+  ]
+};
+
+// Active prior period (populated on file load, defaults to Q2 Wk6)
+let CURRENT_PRIOR_WEEK = 6;
+const PRIOR_BU_DATA = [...Q2_PRIOR[6]];
+
+// Helper: QTQ % = (current - prior) / |prior|
+const qtqPct = (cur, prior) => (prior == null || prior === 0) ? null : (cur - prior) / Math.abs(prior);
 
 // ─── Raw data extracted from AM Dashboard_Q3Wk6v1.xlsx ───────────────────────
 const BU_DATA = [
@@ -860,6 +967,7 @@ const mkTag = m => {
 // ─── KPI Cards ───────────────────────────────────────────────────────────────
 function renderKPIs(data) {
   const t = data.find(d => d.bu === "Total");
+  const p = PRIOR_BU_DATA.find(d => d.bu === "Total");
 
   const tag = (v, isYty) => {
     if (v == null) return '';
@@ -867,6 +975,13 @@ function renderKPIs(data) {
     const arrow = v >= 0 ? "▲" : "▼";
     const label = isYty ? `${arrow} ${fmtPct(Math.abs(v))} YTY` : `${v >= 0 ? '+' : ''}$${fmt(v)}M B(W)`;
     return `<span class="tag ${cls}">${label}</span>`;
+  };
+  const qtqTag = (cur, prior) => {
+    const v = qtqPct(cur, prior);
+    if (v == null) return '';
+    const cls = v >= 0 ? "pos" : "neg";
+    const arrow = v >= 0 ? "▲" : "▼";
+    return `<span class="tag ${cls}" title="vs Q2 Wk${CURRENT_PRIOR_WEEK}: $${fmt(prior)}M">${arrow} ${fmtPct(Math.abs(v))} QTQ</span>`;
   };
   const attainTag = (v, cls) => {
     if (v == null) return '';
@@ -880,6 +995,7 @@ function renderKPIs(data) {
       actual: t.identified.actual,   target: t.identified.target,
       attain: t.identified.attain,   attainCls: t.identified.attain >= 1 ? "pos" : t.identified.attain >= 0.7 ? "blue" : "neg",
       bw: t.identified.bw,           yty: t.identified.yy,
+      priorActual: p.identified.actual,
       sub: null
     },
     {
@@ -887,6 +1003,7 @@ function renderKPIs(data) {
       actual: t.performed.total,     target: t.performed.target,
       attain: null,                  attainCls: null,
       bw: t.performed.bwTrack,       yty: t.performed.yy,
+      priorActual: p.performed.total,
       sub: `<span class="tag neu">$${fmt(t.performed.rollover)}M Rollover</span><span class="tag neu">$${fmt(t.performed.cqClose)}M CQ</span>`
     },
     {
@@ -894,6 +1011,7 @@ function renderKPIs(data) {
       actual: t.converted.qtd,       target: t.converted.target,
       attain: t.converted.attain,    attainCls: t.converted.attain >= 0.5 ? "pos" : t.converted.attain >= 0.25 ? "blue" : "neg",
       bw: t.converted.bwTrack,       yty: t.converted.yy,
+      priorActual: p.converted.qtd,
       sub: null
     }
   ];
@@ -914,6 +1032,7 @@ function renderKPIs(data) {
         ${c.attain != null ? attainTag(c.attain, c.attainCls) : ''}
         ${tag(c.bw, false)}
         ${tag(c.yty, true)}
+        ${qtqTag(c.actual, c.priorActual)}
         ${c.sub || ''}
       </div>
     </div>`).join("");
@@ -1063,13 +1182,15 @@ function clearComments() {
   renderComments();
 }
 
-// ─── YTY badge for table cells ───────────────────────────────────────────────
-const ytyCell = v => {
+// ─── YTY / QTQ badge for table cells ─────────────────────────────────────────
+const pctCell = (v, title) => {
   if (v == null) return '<td>—</td>';
   const cls = v >= 0 ? "pos" : "neg";
   const arrow = v >= 0 ? "▲" : "▼";
-  return `<td><span class="badge ${cls}" style="font-size:11px;">${arrow} ${fmtPct(Math.abs(v))}</span></td>`;
+  const tip = title ? ` title="${title}"` : '';
+  return `<td><span class="badge ${cls}" style="font-size:11px;"${tip}>${arrow} ${fmtPct(Math.abs(v))}</span></td>`;
 };
+const ytyCell = v => pctCell(v);
 
 // ─── BU Table ────────────────────────────────────────────────────────────────
 function renderBUTable(data) {
@@ -1077,6 +1198,13 @@ function renderBUTable(data) {
   tbody.innerHTML = data.map((d) => {
     const isTotal = d.bu === "Total";
     const rowClass = isTotal ? 'class="total-row"' : "";
+    const prior = PRIOR_BU_DATA.find(p => p.bu === d.bu);
+    const qtqIdent = prior ? qtqPct(d.identified.actual, prior.identified.actual) : null;
+    const qtqPerf  = prior ? qtqPct(d.performed.total,   prior.performed.total)   : null;
+    const qtqConv  = prior ? qtqPct(d.converted.qtd,     prior.converted.qtd)     : null;
+    const priorIdent = prior ? `Q2 Wk${CURRENT_PRIOR_WEEK}: $${fmt(prior.identified.actual)}M` : '';
+    const priorPerf  = prior ? `Q2 Wk${CURRENT_PRIOR_WEEK}: $${fmt(prior.performed.total)}M`   : '';
+    const priorConv  = prior ? `Q2 Wk${CURRENT_PRIOR_WEEK}: $${fmt(prior.converted.qtd)}M`     : '';
     return `<tr ${rowClass}>
       <td>${d.bu}</td>
       <td>${fmt(d.identified.target)}</td>
@@ -1084,17 +1212,20 @@ function renderBUTable(data) {
       <td>${bwBadge(d.identified.bw)}</td>
       <td>${fmtPct(d.identified.attain)}</td>
       ${ytyCell(d.identified.yy)}
+      ${pctCell(qtqIdent, priorIdent)}
       <td>${fmt(d.performed.target)}</td>
       <td>${fmt(d.performed.rollover)}</td>
       <td>${fmt(d.performed.total)}</td>
       <td>${fmt(d.performed.track)}</td>
       <td>${bwBadge(d.performed.bwTrack)}</td>
       ${ytyCell(d.performed.yy)}
+      ${pctCell(qtqPerf, priorPerf)}
       <td>${fmt(d.converted.target)}</td>
       <td>${fmt(d.converted.qtd)}</td>
       <td>${bwBadge(d.converted.bwTrack)}</td>
       <td>${fmtPct(d.converted.attain)}</td>
       ${ytyCell(d.converted.yy)}
+      ${pctCell(qtqConv, priorConv)}
       <td>${fmt(d.togo.toGo)}</td>
     </tr>`;
   }).join("");
