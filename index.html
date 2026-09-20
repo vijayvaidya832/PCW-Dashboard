@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCW Americas Dashboard — Q3 Wk6</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #0f1b35;
+      --navy2:   #162040;
+      --blue:    #1b5ec7;
+      --blue-lt: #e8f0fd;
+      --teal:    #0e7a6e;
+      --teal-lt: #e6f4f2;
+      --bg:      #f0f3f8;
+      --surface: #ffffff;
+      --border:  #dde3ee;
+      --text:    #0f1b35;
+      --muted:   #5a6478;
+      --green:   #15803d;
+      --green-lt:#dcfce7;
+      --red:     #b91c1c;
+      --red-lt:  #fee2e2;
+      --amber:   #92400e;
+      --amber-lt:#fef3c7;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a3060 100%);
+      color: #fff;
+      padding: 0 32px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--blue);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon {
+      width: 36px; height: 36px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.2px; color: #fff; }
+    .header-sub { font-size: 11px; color: #8fa4c8; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    #period-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* ── Toolbar strip ── */
+    .toolbar-strip {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-height: 46px;
+      flex-wrap: wrap;
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px 8px 0;
+      border-right: 1px solid var(--border);
+      margin-right: 20px;
+    }
+    .toolbar-group:last-child { border-right: none; margin-right: 0; }
+    .toolbar-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .toolbar-group select {
+      padding: 5px 28px 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      background: #f7f9fc;
+      color: var(--text);
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6478'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+    .toolbar-group select:focus { outline: none; border-color: var(--blue); }
+    .btn { padding: 5px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn-navy   { background: var(--navy); color: #fff; }
+    .btn-ghost  { background: #f0f3f8; color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--red-lt); color: var(--red); }
+    .btn-blue   { background: var(--blue); color: #fff; }
+    .btn-reset  { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+    #comment-status { font-size: 11px; color: var(--muted); }
+
+    /* ── Upload bar ── */
+    .upload-bar {
+      background: var(--blue-lt);
+      border: 1px dashed #a3bce8;
+      border-radius: 10px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--blue);
+      font-weight: 500;
+    }
+    .upload-bar input[type=file] { font-size: 12px; flex: 1; }
+    #upload-label { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 24px 32px 40px;
+      display: grid;
+      gap: 20px;
+    }
+
+    /* ── Section heading ── */
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: -6px;
+    }
+    .section-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── KPI cards row ── */
+    .kpi-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 860px) { .kpi-cards { grid-template-columns: 1fr; } }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .kpi-card.identified::before { background: var(--blue); }
+    .kpi-card.performed::before  { background: var(--teal); }
+    .kpi-card.converted::before  { background: #7c3aed; }
+
+    .kpi-card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kpi-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .kpi-dot.identified { background: var(--blue); }
+    .kpi-dot.performed  { background: var(--teal); }
+    .kpi-dot.converted  { background: #7c3aed; }
+
+    .kpi-numbers {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .kpi-actual { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; }
+    .kpi-target { font-size: 13px; color: var(--muted); }
+    .kpi-progress-bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .kpi-progress-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+    .kpi-card.identified .kpi-progress-fill { background: var(--blue); }
+    .kpi-card.performed  .kpi-progress-fill { background: var(--teal); }
+    .kpi-card.converted  .kpi-progress-fill { background: #7c3aed; }
+    .kpi-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .tag.pos   { background: var(--green-lt); color: var(--green); }
+    .tag.neg   { background: var(--red-lt);   color: var(--red);   }
+    .tag.neu   { background: #f1f5f9;         color: #475569;      }
+    .tag.blue  { background: var(--blue-lt);  color: var(--blue);  }
+    .tag.teal  { background: var(--teal-lt);  color: var(--teal);  }
+    .tag.amber { background: var(--amber-lt); color: var(--amber); }
+    .tag.purple{ background: #ede9fe;         color: #5b21b6;      }
+
+    /* legacy aliases used by existing JS */
+    .kpi-tag       { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .kpi-tag.pos   { background: var(--green-lt); color: var(--green); }
+    .kpi-tag.neg   { background: var(--red-lt);   color: var(--red);   }
+    .kpi-tag.neu   { background: #f1f5f9;         color: #475569;      }
+    .kpi-tag.blue  { background: var(--blue-lt);  color: var(--blue);  }
+    .kpi-metric-val  { font-size: 24px; font-weight: 800; color: var(--text); display: block; }
+    .kpi-meta        { display: flex; justify-content: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .kpi-bw-pos      { color: var(--green); font-size: 22px; font-weight: 700; }
+    .kpi-bw-neg      { color: var(--red);   font-size: 22px; font-weight: 700; }
+
+    /* ── Charts row ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px 16px;
+    }
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .chart-card h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .chart-card canvas { max-height: 220px; }
+
+    /* ── Cards / tables ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-card-header {
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-card h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead th {
+      background: #f4f6fb;
+      text-align: center;
+      padding: 9px 11px;
+      font-weight: 700;
+      font-size: 10.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: left; }
+    tbody tr { border-bottom: 1px solid #eef0f5; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7f9fd; }
+    tbody td { padding: 9px 11px; text-align: center; }
+    tbody td:first-child { text-align: left; font-weight: 600; color: var(--text); }
+    .total-row td { font-weight: 700; background: #eef2fa; color: var(--navy); }
+
+    /* column group dividers */
+    .col-div { border-left: 2px solid var(--border) !important; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.pos { background: var(--green-lt); color: var(--green); }
+    .badge.neg { background: var(--red-lt);   color: var(--red);   }
+    .badge.neu { background: #f1f5f9;         color: #475569;      }
+
+    /* ── Top 25 table ── */
+    .top25-table thead th { font-size: 10.5px; }
+    .top25-table tbody td { font-size: 12px; }
+    .rank-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--blue-lt);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .rank-num.top3 { background: #fef9c3; color: #92400e; }
+    .market-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .market-tag.pub  { background: #dbeafe; color: #1d4ed8; }
+    .market-tag.fss  { background: #dcfce7; color: #15803d; }
+    .market-tag.dist { background: #fef9c3; color: #854d0e; }
+    .market-tag.comm { background: #ffe4e6; color: #be123c; }
+    .market-tag.can  { background: #f1f5f9; color: #334155; }
+    .market-tag.la   { background: #fff7ed; color: #c2410c; }
+
+    /* ── Suggestion dropdown ── */
+    .suggest-dropdown {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(15,27,53,.12);
+      z-index: 100;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .suggest-dropdown .suggest-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eef0f5;
+      line-height: 1.4;
+    }
+    .suggest-dropdown .suggest-item:last-child { border-bottom: none; }
+    .suggest-dropdown .suggest-item:hover { background: var(--blue-lt); }
+    .suggest-dropdown .suggest-item .suggest-source {
+      font-size: 10px;
+      color: #9ca3af;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ── Comments panel ── */
+    .comments-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .comments-panel-header {
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .comments-panel-header h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .comments-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 14px;
+      padding: 16px 20px;
+    }
+    .comment-bu-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: #fafbff;
+      position: relative;
+    }
+    .comment-bu-card .bu-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .comment-field { margin-bottom: 10px; position: relative; }
+    .comment-field:last-child { margin-bottom: 0; }
+    .comment-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .comment-field label.yty-lbl { color: var(--blue); }
+    .comment-field label.qtq-lbl { color: var(--teal); }
+    .comment-field textarea {
+      width: 100%;
+      height: 58px;
+      max-height: 58px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      resize: none;
+      padding: 6px 34px 6px 8px;
+      line-height: 1.45;
+      transition: border-color .15s, box-shadow .15s;
+      overflow-y: auto;
+    }
+    .comment-field textarea:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(27,94,199,.1); }
+    .comment-field textarea::placeholder { color: #c0c7d0; font-style: italic; }
+    .suggest-btn {
+      position: absolute;
+      bottom: 6px; right: 6px;
+      background: var(--blue-lt);
+      color: var(--blue);
+      border: none;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .comment-field:hover .suggest-btn { opacity: 1; }
+
+    /* ── Comment toolbar (now inside toolbar-strip) ── */
+    .btn-export { background: var(--navy); color: #fff; }
+    .btn-import { background: #f0f3f8; color: var(--text); border: 1px solid var(--border) !important; }
+    .btn-clear  { background: var(--red-lt); color: var(--red); }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 20px;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    /* ── KPI summary (legacy table, kept hidden, replaced by cards) ── */
+    .kpi-summary { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-icon">📊</div>
+    <div>
+      <h1>PCW Americas Dashboard</h1>
+      <div class="header-sub">Pipeline Conversion Workstream · Americas Region</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="period-label">Q3 2026 · Week 6</span>
+  </div>
+</header>
+
+<!-- Unified toolbar: filters + comment actions + upload -->
+<div class="toolbar-strip">
+  <div class="toolbar-group">
+    <label>BU</label>
+    <select id="bu-filter" onchange="applyFilter()">
+      <option value="ALL">All BUs</option>
+      <option value="Total">Total</option>
+      <option value="CAN BU">CAN BU</option>
+      <option value="US DIS">US DIS</option>
+      <option value="US FSS">US FSS</option>
+      <option value="US PUB">US PUB</option>
+      <option value="US COM IND BU">US COM IND BU</option>
+      <option value="LA BU">LA BU</option>
+    </select>
+  </div>
+  <div class="toolbar-group">
+    <label>Market</label>
+    <select id="market-filter" onchange="applyFilter()">
+      <option value="ALL">All Markets</option>
+      <option value="PUB">PUB</option>
+      <option value="COMM-INDU">COMM-INDU</option>
+      <option value="FSS">FSS</option>
+      <option value="DIST">DIST</option>
+    </select>
+    <button class="btn btn-reset" onclick="resetFilters()">Reset</button>
+  </div>
+  <div class="toolbar-group">
+    <label>Comments</label>
+    <button class="btn btn-export" onclick="exportComments()">↓ Export</button>
+    <button class="btn btn-import" onclick="document.getElementById('import-input').click()">↑ Import</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importComments(event)" />
+    <button class="btn btn-clear" onclick="clearComments()">✕ Clear</button>
+    <span id="comment-status"></span>
+  </div>
+  <div class="toolbar-group">
+    <label>Data</label>
+    <input type="file" id="xlsx-upload" accept=".xlsx" style="font-size:12px;max-width:190px;" />
+    <button class="btn btn-blue" onclick="loadXlsx()">↻ Refresh</button>
+    <span id="upload-label">AM Dashboard_Q3Wk6v1.xlsx</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- KPI Cards -->
+  <div class="section-heading">Key Metrics — Total Americas</div>
+  <div class="kpi-cards" id="kpi-cards">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- Legacy KPI table (hidden, kept for JS compatibility) -->
+  <div class="kpi-summary" style="display:none">
+    <table id="kpi-table"><thead><tr>
+      <th>Total Americas</th><th>Target</th><th>Actual</th><th>Attain %</th><th>YTY %</th>
+    </tr></thead><tbody id="kpi-row"></tbody></table>
+  </div>
+
+  <!-- Charts -->
+  <div class="section-heading">Performance Charts</div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Performed $M — Target vs Actual</h3>
+      </div>
+      <canvas id="chart-performed"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Converted $M — Target vs Actual</h3>
+      </div>
+      <canvas id="chart-converted"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Identified Attainment % by BU</h3>
+      </div>
+      <canvas id="chart-attain"></canvas>
+    </div>
+  </div>
+
+  <!-- BU Detail Table -->
+  <div class="section-heading">Business Unit Detail</div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Business Unit Scorecard</h3>
+    </div>
+    <div class="table-scroll">
+      <table id="bu-table">
+        <thead>
+          <tr>
+            <th rowspan="2">Business Unit</th>
+            <th colspan="5" class="col-div">Identified $M</th>
+            <th colspan="6" class="col-div">Performed $M</th>
+            <th colspan="5" class="col-div">Converted $M</th>
+            <th class="col-div">To-Go</th>
+          </tr>
+          <tr>
+            <th class="col-div">Qtr Target</th><th>Identified</th><th>B(W)</th><th>Attain%</th><th>YTY%</th>
+            <th class="col-div">Qtr Target</th><th>Rollover</th><th>Total Perf</th><th>Perf Track</th><th>B(W) Track</th><th>YTY%</th>
+            <th class="col-div">Qtr Target</th><th>QTD Conv</th><th>B(W) Track</th><th>Attain%</th><th>YTY%</th>
+            <th class="col-div">TO GO</th>
+          </tr>
+        </thead>
+        <tbody id="bu-tbody">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Commentary -->
+  <div class="section-heading">Commentary — Americas</div>
+  <div class="comments-panel">
+    <div class="comments-panel-header">
+      <h3>💬 Commentary</h3>
+    </div>
+    <div class="comments-grid" id="comments-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- Top 25 -->
+  <div class="section-heading">Top Opportunities</div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Top 25 Opportunities — Still PCW</h3>
+    </div>
+    <div class="table-scroll">
+      <table class="top25-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;width:36px">#</th>
+            <th style="text-align:left">Customer</th>
+            <th style="text-align:left">Opportunity ID</th>
+            <th>Close Date</th>
+            <th>Market</th>
+            <th>ITD Still PCW $M</th>
+          </tr>
+        </thead>
+        <tbody id="top25-tbody2">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer>Made with IBM Bob</footer>
+
+<script>
+// ─── SheetJS Excel loader ────────────────────────────────────────────────────
+
+// Convert a cell value that may be a decimal (0.62), a whole number (62),
+// or a percentage string ("62%" / "-5.7%") into a decimal fraction.
+function toDecimal(v) {
+  if (v == null) return 0;
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (s.endsWith("%")) return parseFloat(s) / 100;
+    return parseFloat(s) || 0;
+  }
+  const n = Number(v);
+  // Excel percentage cells are already stored as decimals (0.62), so only
+  // divide by 100 when the absolute value is clearly > 1.5 (e.g. 62, -5.7 won't
+  // trigger this but 62 will).
+  return Math.abs(n) > 1.5 ? n / 100 : n;
+}
+
+function loadXlsx() {
+  const input = document.getElementById("xlsx-upload");
+  if (!input.files || !input.files[0]) {
+    alert("Please select an .xlsx file first.");
+    return;
+  }
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: "array", cellDates: true });
+
+      // ── Parse AM Dashboard sheet ──────────────────────────────────────────
+      const ws = wb.Sheets["AM Dashboard"];
+      if (!ws) { alert('Could not find sheet "AM Dashboard" in this file.'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+      // Find the header row dynamically by looking for "Business Units" in column A
+      let headerIdx = rows.findIndex(r => r && String(r[0] || "").trim() === "Business Units");
+      if (headerIdx === -1) {
+        // Fallback: look for any row whose col A looks like a BU name
+        headerIdx = rows.findIndex(r => r && String(r[0] || "").trim() === "Total") - 1;
+      }
+      if (headerIdx === -1) { alert("Could not locate data rows in AM Dashboard sheet."); return; }
+
+      // Data rows start immediately after header row; collect until col A is empty
+      const dataRows = rows.slice(headerIdx + 1).filter(r => r && String(r[0] || "").trim() !== "");
+
+      const parsed = dataRows.map(r => ({
+        bu:         String(r[0]).trim(),
+        identified: { target: +r[1]||0, actual: +r[2]||0, bw: +r[3]||0, attain: toDecimal(r[4]), yy: toDecimal(r[5]), ww: +r[6]||0 },
+        performed:  { target: +r[7]||0, rollover: +r[8]||0, cqClose: +r[9]||0, cqFuture: +r[10]||0, total: +r[11]||0, track: +r[12]||0, bwTrack: +r[13]||0, yy: toDecimal(r[14]), ww: +r[15]||0 },
+        togo:       { weekly: +r[16]||0, toGo: +r[17]||0 },
+        converted:  { target: +r[18]||0, qtd: +r[19]||0, track: +r[20]||0, bwTrack: +r[21]||0, attain: toDecimal(r[22]), yy: toDecimal(r[23]), ww: +r[24]||0 }
+      }));
+
+      if (!parsed.length || !parsed.find(d => d.bu === "Total")) {
+        alert("Could not find a \"Total\" row in the AM Dashboard sheet. Please check the file format.");
+        return;
+      }
+
+      // ── Parse Top 25 sheet ────────────────────────────────────────────────
+      const ws2 = wb.Sheets["Top 25 Still PCW"];
+      const top25rows = ws2 ? XLSX.utils.sheet_to_json(ws2, { header: 1, defval: null }) : [];
+      // Skip rows until we find the "Customers" header, then take data rows after it
+      const t25HeaderIdx = top25rows.findIndex(r => r && String(r[0] || "").trim() === "Customers");
+      const t25Start = t25HeaderIdx >= 0 ? t25HeaderIdx + 1 : 2;
+      const top25parsed = top25rows.slice(t25Start)
+        .filter(r => r && r[0] && String(r[0]).trim() && (+r[4] || 0) > 0)
+        .map(r => ({
+          customer:  String(r[0]).trim(),
+          opp:       String(r[1] || "").trim(),
+          closeDate: r[2] instanceof Date
+                       ? r[2].toISOString().slice(0, 10)
+                       : String(r[2] || "").slice(0, 10),
+          market:    String(r[3] || "").trim(),
+          itd:       +r[4] || 0
+        }));
+
+      // ── Update global data and re-render ──────────────────────────────────
+      BU_DATA.length = 0;
+      parsed.forEach(d => BU_DATA.push(d));
+      TOP25.length = 0;
+      top25parsed.forEach(r => TOP25.push(r));
+
+      // Update BU filter dropdown
+      const buSel = document.getElementById("bu-filter");
+      buSel.innerHTML = '<option value="ALL">All BUs</option>' +
+        BU_DATA.map(d => `<option value="${d.bu}">${d.bu}</option>`).join("");
+
+      document.getElementById("upload-label").textContent = "Currently showing: " + file.name;
+
+      resetFilters();
+      alert("✅ Dashboard refreshed from: " + file.name);
+    } catch(err) {
+      alert("Failed to parse file: " + err.message + "\n\n" + err.stack);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── Raw data extracted from AM Dashboard_Q3Wk6v1.xlsx ───────────────────────
+const BU_DATA = [
+  {
+    bu: "Total",
+    identified: { target: 71.90, actual: 44.55, bw: -27.35, attain: 0.6196, yy: -0.0573, ww: 3.597 },
+    performed:  { target: 60.02, rollover: 10.12, cqClose: 13.39, cqFuture: 1.11, total: 24.62, track: 24.51, bwTrack: 0.11, yy: 0.1203, ww: 3.093 },
+    togo:       { weekly: 0, toGo: 35.40 },
+    converted:  { target: 41.99, qtd: 9.048, track: 6.27, bwTrack: 2.778, attain: 0.2155, yy: 0.1157, ww: 1.567 }
+  },
+  {
+    bu: "CAN BU",
+    identified: { target: 9.60,  actual: 3.579, bw: -6.021, attain: 0.3728, yy: -0.6318, ww: -0.265 },
+    performed:  { target: 8.03,  rollover: 0.386, cqClose: 0.728, cqFuture: 0.068, total: 1.181, track: 3.19, bwTrack: -2.009, yy: -0.6628, ww: 0.335 },
+    togo:       { weekly: 0, toGo: 6.849 },
+    converted:  { target: 5.62,  qtd: 0.506, track: 0.80, bwTrack: -0.294, attain: 0.0901, yy: -0.3566, ww: 0.080 }
+  },
+  {
+    bu: "US DIS",
+    identified: { target: 16.00, actual: 4.577, bw: -11.423, attain: 0.2861, yy: -0.5188, ww: 0.699 },
+    performed:  { target: 13.38, rollover: 0.386, cqClose: 2.179, cqFuture: 0.178, total: 2.743, track: 5.44, bwTrack: -2.697, yy: -0.4012, ww: 0.690 },
+    togo:       { weekly: 0, toGo: 10.637 },
+    converted:  { target: 9.36,  qtd: 1.229, track: 1.40, bwTrack: -0.171, attain: 0.1313, yy: -0.2602, ww: 0.336 }
+  },
+  {
+    bu: "US FSS",
+    identified: { target: 7.60,  actual: 10.444, bw: 2.844, attain: 1.3742, yy: 0.4141, ww: 3.174 },
+    performed:  { target: 6.30,  rollover: 1.707, cqClose: 1.570, cqFuture: 0.051, total: 3.328, track: 2.50, bwTrack: 0.828, yy: -0.0523, ww: 0.626 },
+    togo:       { weekly: 0, toGo: 2.972 },
+    converted:  { target: 4.42,  qtd: 0.730, track: 0.66, bwTrack: 0.070, attain: 0.1653, yy: -0.5711, ww: 0.052 }
+  },
+  {
+    bu: "US PUB",
+    identified: { target: 14.70, actual: 12.081, bw: -2.619, attain: 0.8218, yy: 0.3530, ww: 1.092 },
+    performed:  { target: 12.28, rollover: 4.197, cqClose: 2.164, cqFuture: 0.465, total: 6.825, track: 5.16, bwTrack: 1.665, yy: 0.5504, ww: 0.639 },
+    togo:       { weekly: 0, toGo: 5.455 },
+    converted:  { target: 8.60,  qtd: 0.568, track: 1.35, bwTrack: -0.782, attain: 0.0660, yy: -0.0609, ww: 0.114 }
+  },
+  {
+    bu: "US COM IND BU",
+    identified: { target: 23.20, actual: 13.290, bw: -9.910, attain: 0.5729, yy: 0.1684, ww: -0.986 },
+    performed:  { target: 19.32, rollover: 3.442, cqClose: 6.500, cqFuture: 0.349, total: 10.291, track: 7.93, bwTrack: 2.361, yy: 0.7794, ww: 0.828 },
+    togo:       { weekly: 0, toGo: 9.029 },
+    converted:  { target: 13.50, qtd: 5.891, track: 1.98, bwTrack: 3.911, attain: 0.4364, yy: 0.8620, ww: 1.037 }
+  },
+  {
+    bu: "LA BU",
+    identified: { target: 0.80,  actual: 0.579, bw: -0.221, attain: 0.7232, yy: 0.7235, ww: -0.117 },
+    performed:  { target: 0.71,  rollover: 0.001, cqClose: 0.252, cqFuture: 0.0000001, total: 0.253, track: 0.29, bwTrack: -0.037, yy: 0.2823, ww: -0.024 },
+    togo:       { weekly: 0, toGo: 0.457 },
+    converted:  { target: 0.49,  qtd: 0.123, track: 0.08, bwTrack: 0.043, attain: 0.2503, yy: -0.3529, ww: -0.052 }
+  }
+];
+
+const TOP25 = [
+  { customer: "CDW LLC",                          opp: "006gR0000045DDhQAM", closeDate: "2026-07-31", market: "PUB",       itd: 3.25537313 },
+  { customer: "TOYOTA MOTOR NORTH AMERICA INC",   opp: "006gR000004Hk5lQAC", closeDate: "2026-08-14", market: "COMM-INDU", itd: 1.432327 },
+  { customer: "PNC BANK NATIONAL ASSOCIATION",    opp: "006gR000005hGQ1QAM", closeDate: "2026-09-25", market: "FSS",       itd: 0.85799944 },
+  { customer: "TOYOTA MOTOR NORTH AMERICA INC",   opp: "006gR000005ParpQAC", closeDate: "2026-08-07", market: "COMM-INDU", itd: 0.599552 },
+  { customer: "HIGHMARK INC",                     opp: "006gR000004xp14QAA", closeDate: "2026-08-31", market: "PUB",       itd: 0.57925708 },
+  { customer: "HUMANA INC",                       opp: "006gR000003YGAJQA4", closeDate: "2026-08-07", market: "PUB",       itd: 0.53733667 },
+  { customer: "REGENERON PHARMACEUTICALS INC",    opp: "006Ka00000NYCCLIA5", closeDate: "2026-12-15", market: "PUB",       itd: 0.41116575 },
+  { customer: "PEPSICO INC",                      opp: "006gR0000047NDiQAM", closeDate: "2026-08-14", market: "DIST",      itd: 0.38611317 },
+  { customer: "TOYOTA MOTOR NORTH AMERICA INC",   opp: "006gR000005ParpQAC", closeDate: "2026-08-07", market: "COMM-INDU", itd: 0.321541 },
+  { customer: "STATE OF WEST VIRGINIA",           opp: "006gR000003mKQwQAM", closeDate: "2026-08-28", market: "PUB",       itd: 0.32152752 },
+  { customer: "TOYOTA MOTOR NORTH AMERICA INC",   opp: "006gR000005ParpQAC", closeDate: "2026-08-07", market: "COMM-INDU", itd: 0.32041 },
+  { customer: "BANK OF AMERICA NATIONAL",         opp: "006gR0000037Kl3QAE", closeDate: "2026-08-25", market: "FSS",       itd: 0.2749244 },
+  { customer: "NEXTGEN HEALTHCARE INFORMATION",   opp: "006gR000002eSPSQA2", closeDate: "2026-08-14", market: "COMM-INDU", itd: 0.25327 },
+  { customer: "MEDTRONIC INC",                    opp: "006gR000001WHLMQA4", closeDate: "2026-10-09", market: "COMM-INDU", itd: 0.24789172 },
+  { customer: "ANTHEM INC",                       opp: "006gR000006AuS8QAK", closeDate: "2026-08-31", market: "PUB",       itd: 0.21055621 },
+  { customer: "CITY OF NEW YORK",                 opp: "006gR000005d1ivQAA", closeDate: "2026-09-15", market: "PUB",       itd: 0.20906667 },
+  { customer: "CHUBB INA HOLDINGS INC",           opp: "006gR000005NVeXQAW", closeDate: "2026-08-31", market: "FSS",       itd: 0.2025237 },
+  { customer: "DELTA AIR LINES INC",              opp: "006gR000004IXRRQA4", closeDate: "2026-08-28", market: "DIST",      itd: 0.19901755 },
+  { customer: "BRIGHTSPEED",                      opp: "006gR000001VsGUQA0", closeDate: "2026-08-21", market: "COMM-INDU", itd: 0.17943813 },
+  { customer: "ABBOTT LABORATORIES",              opp: "006gR0000045dBLQAY", closeDate: "2026-09-30", market: "PUB",       itd: 0.16683755 },
+  { customer: "NESTLE REGIONAL GLOBE OFFICE NORTH",opp:"006gR000002iKY9QAM", closeDate: "2026-12-18", market: "DIST",      itd: 0.15280151 },
+  { customer: "SEI INVESTMENTS COMPANY",          opp: "006gR000004wxlmQAA", closeDate: "2026-09-11", market: "FSS",       itd: 0.14345067 },
+  { customer: "FISERV INC",                       opp: "006gR000006Kqa9QAC", closeDate: "2026-09-25", market: "FSS",       itd: 0.14024312 },
+  { customer: "STATE OF NEW YORK",                opp: "006gR0000048YtVQAU", closeDate: "2026-09-18", market: "PUB",       itd: 0.13193204 },
+  { customer: "MISTER CAR WASH INC.",             opp: "006gR000006RACkQAO", closeDate: "2026-09-25", market: "DIST",      itd: 0.1246003 }
+];
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const fmt = (n, d=2) => (n == null ? "—" : Number(n).toFixed(d));
+const fmtPct = n => (n == null ? "—" : (n * 100).toFixed(1) + "%");
+const bwClass = v => v >= 0 ? "pos" : "neg";
+const bwBadge = v => `<span class="badge ${bwClass(v)}">${v >= 0 ? "+" : ""}${fmt(v)}</span>`;
+const mkTag = m => {
+  const map = { PUB:"pub", FSS:"fss", DIST:"dist", "COMM-INDU":"comm", CAN:"can", LA:"la" };
+  const cls = map[m] || "";
+  return `<span class="market-tag ${cls}">${m}</span>`;
+};
+
+// ─── KPI Cards ───────────────────────────────────────────────────────────────
+function renderKPIs(data) {
+  const t = data.find(d => d.bu === "Total");
+
+  const tag = (v, isYty) => {
+    if (v == null) return '';
+    const cls = v >= 0 ? "pos" : "neg";
+    const arrow = v >= 0 ? "▲" : "▼";
+    const label = isYty ? `${arrow} ${fmtPct(Math.abs(v))} YTY` : `${v >= 0 ? '+' : ''}$${fmt(v)}M B(W)`;
+    return `<span class="tag ${cls}">${label}</span>`;
+  };
+  const attainTag = (v, cls) => {
+    if (v == null) return '';
+    return `<span class="tag ${cls}">${fmtPct(v)} Attain</span>`;
+  };
+  const pctFill = (actual, target) => Math.min(100, target > 0 ? (actual / target * 100) : 0).toFixed(1);
+
+  const cards = [
+    {
+      id: "identified", label: "Identified",
+      actual: t.identified.actual,   target: t.identified.target,
+      attain: t.identified.attain,   attainCls: t.identified.attain >= 1 ? "pos" : t.identified.attain >= 0.7 ? "blue" : "neg",
+      bw: t.identified.bw,           yty: t.identified.yy,
+      sub: null
+    },
+    {
+      id: "performed", label: "Performed",
+      actual: t.performed.total,     target: t.performed.target,
+      attain: null,                  attainCls: null,
+      bw: t.performed.bwTrack,       yty: t.performed.yy,
+      sub: `<span class="tag neu">$${fmt(t.performed.rollover)}M Rollover</span><span class="tag neu">$${fmt(t.performed.cqClose)}M CQ</span>`
+    },
+    {
+      id: "converted", label: "Converted",
+      actual: t.converted.qtd,       target: t.converted.target,
+      attain: t.converted.attain,    attainCls: t.converted.attain >= 0.5 ? "pos" : t.converted.attain >= 0.25 ? "blue" : "neg",
+      bw: t.converted.bwTrack,       yty: t.converted.yy,
+      sub: null
+    }
+  ];
+
+  document.getElementById("kpi-cards").innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.id}">
+      <div class="kpi-card-label">
+        <span class="kpi-dot ${c.id}"></span>${c.label}
+      </div>
+      <div class="kpi-numbers">
+        <span class="kpi-actual">$${fmt(c.actual)}M</span>
+        <span class="kpi-target">of $${fmt(c.target)}M target</span>
+      </div>
+      <div class="kpi-progress-bar">
+        <div class="kpi-progress-fill" style="width:${pctFill(c.actual, c.target)}%"></div>
+      </div>
+      <div class="kpi-tags">
+        ${c.attain != null ? attainTag(c.attain, c.attainCls) : ''}
+        ${tag(c.bw, false)}
+        ${tag(c.yty, true)}
+        ${c.sub || ''}
+      </div>
+    </div>`).join("");
+}
+
+// ─── Comment store ───────────────────────────────────────────────────────────
+// Structure: { "BU_KEY": { yty: "...", qtq: "...", history: [{yty,qtq,period,ts},...] } }
+let COMMENTS = JSON.parse(localStorage.getItem("pcw_comments") || "{}");
+
+function saveComments() {
+  localStorage.setItem("pcw_comments", JSON.stringify(COMMENTS));
+  updateCommentStatus();
+}
+
+function updateCommentStatus() {
+  const count = Object.values(COMMENTS).filter(c => c.yty || c.qtq).length;
+  const el = document.getElementById("comment-status");
+  if (el) el.textContent = count > 0 ? `${count} BU(s) have comments` : "";
+}
+
+// ─── Trend-based auto-suggestions ────────────────────────────────────────────
+function getTrendSuggestions(d) {
+  const suggestions = [];
+  // Identified
+  if (d.identified.attain < 0.5)  suggestions.push({ text: `Identified attainment at ${fmtPct(d.identified.attain)} — significantly below target. Pipeline build-up required.`, source: "📉 Data trend" });
+  else if (d.identified.attain >= 1) suggestions.push({ text: `Identified exceeded target at ${fmtPct(d.identified.attain)} attainment — strong pipeline momentum.`, source: "📈 Data trend" });
+  if (d.identified.yy < -0.1) suggestions.push({ text: `YTY down ${fmtPct(Math.abs(d.identified.yy))} on identified — market softness or delayed deal starts.`, source: "📉 YTY trend" });
+  else if (d.identified.yy > 0.1) suggestions.push({ text: `YTY up ${fmtPct(d.identified.yy)} on identified — positive demand signals vs prior year.`, source: "📈 YTY trend" });
+  // Performed
+  if (d.performed.bwTrack < -1) suggestions.push({ text: `Performed tracking $${fmt(Math.abs(d.performed.bwTrack))}M behind track — execution risk, monitor weekly.`, source: "📉 Data trend" });
+  else if (d.performed.bwTrack > 0.5) suggestions.push({ text: `Performed $${fmt(d.performed.bwTrack)}M ahead of track — delivery pace is strong.`, source: "📈 Data trend" });
+  if (d.performed.yy < -0.1) suggestions.push({ text: `Performed YTY down ${fmtPct(Math.abs(d.performed.yy))} — lower volume or delays vs prior year quarter.`, source: "📉 YTY trend" });
+  else if (d.performed.yy > 0.1) suggestions.push({ text: `Performed YTY up ${fmtPct(d.performed.yy)} — acceleration vs prior year.`, source: "📈 YTY trend" });
+  // Converted
+  if (d.converted.attain < 0.15) suggestions.push({ text: `Converted attainment at ${fmtPct(d.converted.attain)} — conversion pipeline needs acceleration.`, source: "📉 Data trend" });
+  if (d.converted.bwTrack < -0.5) suggestions.push({ text: `Converted $${fmt(Math.abs(d.converted.bwTrack))}M behind conv track — deals at risk of slipping.`, source: "📉 Data trend" });
+  else if (d.converted.bwTrack > 0.5) suggestions.push({ text: `Converted $${fmt(d.converted.bwTrack)}M ahead of conv track — strong deal closure pace.`, source: "📈 Data trend" });
+  // W/W
+  if (d.identified.ww < -0.5) suggestions.push({ text: `W/W identified down $${fmt(Math.abs(d.identified.ww))}M — recent pipeline softness.`, source: "📉 W/W" });
+  return suggestions;
+}
+
+// ─── History-based suggestions ───────────────────────────────────────────────
+function getHistorySuggestions(buKey, type) {
+  const rec = COMMENTS[buKey];
+  if (!rec || !rec.history) return [];
+  return rec.history
+    .filter(h => h[type] && h[type].trim())
+    .slice(-5)
+    .reverse()
+    .map(h => ({ text: h[type], source: `🕐 ${h.period || "prior period"}` }));
+}
+
+// ─── Show suggestion dropdown ─────────────────────────────────────────────────
+function showSuggestions(buKey, type, textarea, data) {
+  // Remove any existing dropdown
+  document.querySelectorAll(".suggest-dropdown").forEach(el => el.remove());
+
+  const trendSuggs = type === "yty"
+    ? getTrendSuggestions(data).filter((_, i) => i < 4)
+    : getTrendSuggestions(data).slice(0, 2);
+  const histSuggs  = getHistorySuggestions(buKey, type);
+  const allSuggs   = [...histSuggs, ...trendSuggs];
+
+  if (allSuggs.length === 0) return;
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "suggest-dropdown";
+  allSuggs.forEach(s => {
+    const item = document.createElement("div");
+    item.className = "suggest-item";
+    item.innerHTML = `${s.text}<span class="suggest-source">${s.source}</span>`;
+    item.addEventListener("mousedown", e => {
+      e.preventDefault();
+      textarea.value = s.text;
+      onCommentChange(buKey, type, s.text);
+      dropdown.remove();
+    });
+    dropdown.appendChild(item);
+  });
+
+  const cell = textarea.closest(".comment-cell");
+  cell.appendChild(dropdown);
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener("click", function handler(e) {
+      if (!cell.contains(e.target)) { dropdown.remove(); document.removeEventListener("click", handler); }
+    });
+  }, 0);
+}
+
+// ─── Save comment change ──────────────────────────────────────────────────────
+function onCommentChange(buKey, type, value) {
+  if (!COMMENTS[buKey]) COMMENTS[buKey] = { yty: "", qtq: "", history: [] };
+  COMMENTS[buKey][type] = value;
+  saveComments();
+}
+
+// ─── Export / Import / Clear ──────────────────────────────────────────────────
+function exportComments() {
+  const period = document.getElementById("period-label").textContent.trim();
+  // Archive current comments into history before export
+  Object.keys(COMMENTS).forEach(buKey => {
+    const c = COMMENTS[buKey];
+    if (c.yty || c.qtq) {
+      if (!c.history) c.history = [];
+      c.history.push({ yty: c.yty, qtq: c.qtq, period, ts: new Date().toISOString() });
+    }
+  });
+  saveComments();
+  const blob = new Blob([JSON.stringify(COMMENTS, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `pcw_comments_${period.replace(/[^a-z0-9]/gi,"_")}.json`;
+  a.click();
+}
+
+function importComments(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Merge: preserve history, update current field values
+      Object.keys(data).forEach(k => {
+        if (!COMMENTS[k]) COMMENTS[k] = { history: [] };
+        if (data[k].history) COMMENTS[k].history = [...(COMMENTS[k].history || []), ...data[k].history];
+        Object.keys(data[k]).filter(f => f !== "history").forEach(f => {
+          COMMENTS[k][f] = data[k][f] || COMMENTS[k][f];
+        });
+      });
+      saveComments();
+      renderComments();
+      alert("Comments imported successfully.");
+    } catch(err) { alert("Invalid JSON file."); }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function clearComments() {
+  if (!confirm("Clear all comments? This cannot be undone.")) return;
+  COMMENTS = {};
+  saveComments();
+  renderComments();
+}
+
+// ─── YTY badge for table cells ───────────────────────────────────────────────
+const ytyCell = v => {
+  if (v == null) return '<td>—</td>';
+  const cls = v >= 0 ? "pos" : "neg";
+  const arrow = v >= 0 ? "▲" : "▼";
+  return `<td><span class="badge ${cls}" style="font-size:11px;">${arrow} ${fmtPct(Math.abs(v))}</span></td>`;
+};
+
+// ─── BU Table ────────────────────────────────────────────────────────────────
+function renderBUTable(data) {
+  const tbody = document.getElementById("bu-tbody");
+  tbody.innerHTML = data.map((d) => {
+    const isTotal = d.bu === "Total";
+    const rowClass = isTotal ? 'class="total-row"' : "";
+    return `<tr ${rowClass}>
+      <td>${d.bu}</td>
+      <td>${fmt(d.identified.target)}</td>
+      <td>${fmt(d.identified.actual)}</td>
+      <td>${bwBadge(d.identified.bw)}</td>
+      <td>${fmtPct(d.identified.attain)}</td>
+      ${ytyCell(d.identified.yy)}
+      <td>${fmt(d.performed.target)}</td>
+      <td>${fmt(d.performed.rollover)}</td>
+      <td>${fmt(d.performed.total)}</td>
+      <td>${fmt(d.performed.track)}</td>
+      <td>${bwBadge(d.performed.bwTrack)}</td>
+      ${ytyCell(d.performed.yy)}
+      <td>${fmt(d.converted.target)}</td>
+      <td>${fmt(d.converted.qtd)}</td>
+      <td>${bwBadge(d.converted.bwTrack)}</td>
+      <td>${fmtPct(d.converted.attain)}</td>
+      ${ytyCell(d.converted.yy)}
+      <td>${fmt(d.togo.toGo)}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ─── Comments Panel — AM level only (Identified, Performed, Converted) ────────
+const AM_COMMENT_FIELDS = [
+  { key: "identified_yty", type: "yty", metric: "Identified", label: "Identified — YTY",  lblCls: "yty-lbl",
+    placeholder: "e.g. Identified PCW at $44.5M: -5.7% yty (PUB, FSS, Com+Ind, LA up yty; CAN, DIS down yty)" },
+  { key: "identified_qtq", type: "qtq", metric: "Identified", label: "Identified — QTQ",  lblCls: "qtq-lbl",
+    placeholder: "e.g. vs last Qtr Wk6, Identified was $54M" },
+  { key: "performed_yty",  type: "yty", metric: "Performed",  label: "Performed — YTY",   lblCls: "yty-lbl",
+    placeholder: "e.g. Total Performed $24.6M ($10.1M Rollover + $14.5M CQ): +12% yty" },
+  { key: "performed_qtq",  type: "qtq", metric: "Performed",  label: "Performed — QTQ",   lblCls: "qtq-lbl",
+    placeholder: "e.g. vs last Qtr Wk6, Performed was $33.6M" },
+  { key: "converted_yty",  type: "yty", metric: "Converted",  label: "Converted — YTY",   lblCls: "yty-lbl",
+    placeholder: "e.g. Converted $9M: +12% yty, $1.6M in Wk6 — above weekly track" },
+  { key: "converted_qtq",  type: "qtq", metric: "Converted",  label: "Converted — QTQ",   lblCls: "qtq-lbl",
+    placeholder: "e.g. vs last Qtr Wk6, Converted was $12.9M" },
+];
+
+function renderComments() {
+  const total = BU_DATA.find(d => d.bu === "Total");
+  const dJson = JSON.stringify(total).replace(/"/g, '&quot;');
+  const grid = document.getElementById("comments-grid");
+  grid.innerHTML = AM_COMMENT_FIELDS.map(f => {
+    const saved = (COMMENTS["AM"] && COMMENTS["AM"][f.key]) || "";
+    return `
+    <div class="comment-bu-card">
+      <div class="bu-label" style="color:${f.type==='yty'?'#3b52a4':'#0e7a6e'}">${f.label}</div>
+      <div class="comment-field">
+        <textarea id="cm-${f.key}" placeholder="${f.placeholder}" maxlength="400"
+          oninput="onAMCommentChange('${f.key}',this.value)">${saved}</textarea>
+        <button class="suggest-btn" onmousedown="event.preventDefault();showSuggestions('AM','${f.type}',document.getElementById('cm-${f.key}'),${dJson})">✦ Suggest</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function onAMCommentChange(fieldKey, value) {
+  if (!COMMENTS["AM"]) COMMENTS["AM"] = { history: [] };
+  COMMENTS["AM"][fieldKey] = value;
+  saveComments();
+}
+
+// ─── Top 25 Table ────────────────────────────────────────────────────────────
+function renderTop25(rows) {
+  document.getElementById("top25-tbody2").innerHTML = rows.map((r, i) => `
+    <tr>
+      <td><span class="rank-num${i < 3 ? ' top3' : ''}">${i + 1}</span></td>
+      <td style="text-align:left;font-weight:600">${r.customer}</td>
+      <td style="text-align:left;font-size:11px;color:#9ca3af;font-family:monospace">${r.opp}</td>
+      <td style="color:#5a6478">${r.closeDate}</td>
+      <td>${mkTag(r.market)}</td>
+      <td><strong style="color:#0f1b35">$${fmt(r.itd, 3)}M</strong></td>
+    </tr>`).join("");
+}
+
+// ─── Charts ─────────────────────────────────────────────────────────────────
+let charts = {};
+const CHART_COLORS = ["#1b5ec7","#0e7a6e","#f59e0b","#ef4444","#7c3aed","#ec4899"];
+const baseChartOpts = {
+  responsive: true,
+  plugins: {
+    legend: { position: "bottom", labels: { boxWidth: 10, padding: 12, font: { size: 11 } } }
+  },
+  scales: {
+    y: { grid: { color: "#eef0f5" }, ticks: { font: { size: 11 }, color: "#5a6478" } },
+    x: { grid: { display: false },  ticks: { font: { size: 11 }, color: "#5a6478" } }
+  }
+};
+
+function renderCharts(data) {
+  const bus = data.filter(d => d.bu !== "Total");
+  const labels = bus.map(d => d.bu);
+
+  if (charts.performed) charts.performed.destroy();
+  if (charts.converted) charts.converted.destroy();
+  if (charts.attain)    charts.attain.destroy();
+
+  charts.performed = new Chart(document.getElementById("chart-performed"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Target", data: bus.map(d => d.performed.target), backgroundColor: "#dde3ee", borderRadius: 4, barPercentage: 0.55 },
+        { label: "Performed", data: bus.map(d => d.performed.total), backgroundColor: CHART_COLORS, borderRadius: 4, barPercentage: 0.55 }
+      ]
+    },
+    options: { ...baseChartOpts }
+  });
+
+  charts.converted = new Chart(document.getElementById("chart-converted"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Target", data: bus.map(d => d.converted.target), backgroundColor: "#dde3ee", borderRadius: 4, barPercentage: 0.55 },
+        { label: "Converted", data: bus.map(d => d.converted.qtd), backgroundColor: CHART_COLORS, borderRadius: 4, barPercentage: 0.55 }
+      ]
+    },
+    options: { ...baseChartOpts }
+  });
+
+  charts.attain = new Chart(document.getElementById("chart-attain"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Attainment %",
+        data: bus.map(d => +(d.identified.attain * 100).toFixed(1)),
+        backgroundColor: bus.map(d => d.identified.attain >= 1 ? "#0e7a6e" : d.identified.attain >= 0.7 ? "#f59e0b" : "#ef4444"),
+        borderRadius: 4,
+        barPercentage: 0.6
+      }]
+    },
+    options: {
+      ...baseChartOpts,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: "#eef0f5" }, ticks: { callback: v => v + "%", font: { size: 11 }, color: "#5a6478" } },
+        x: { grid: { display: false },  ticks: { font: { size: 11 }, color: "#5a6478" } }
+      }
+    }
+  });
+}
+
+// ─── Filter logic ────────────────────────────────────────────────────────────
+function applyFilter() {
+  const buVal     = document.getElementById("bu-filter").value;
+  const mktVal    = document.getElementById("market-filter").value;
+
+  let buData = BU_DATA;
+  if (buVal !== "ALL") buData = BU_DATA.filter(d => d.bu === buVal || d.bu === "Total");
+
+  let top25 = TOP25;
+  if (mktVal !== "ALL") top25 = TOP25.filter(r => r.market === mktVal);
+
+  renderKPIs(BU_DATA);  // KPI cards always show Total
+  renderBUTable(buData);
+  renderTop25(top25);
+  renderCharts(buData.filter(d => d.bu !== "Total").length > 0 ? buData : BU_DATA);
+  renderComments();
+}
+
+function resetFilters() {
+  document.getElementById("bu-filter").value = "ALL";
+  document.getElementById("market-filter").value = "ALL";
+  applyFilter();
+}
+
+// ─── Seed Q3 Wk6 AM comments (only on first load) ───────────────────────────
+(function seedComments() {
+  if (!COMMENTS["AM"] || Object.keys(COMMENTS["AM"]).filter(k => k !== "history").length === 0) {
+    if (!COMMENTS["AM"]) COMMENTS["AM"] = { history: [] };
+    COMMENTS["AM"].identified_yty = "Identified PCW at $44.5M: -5.7% yty\n(PUB, FSS, Com+Ind and LA markets up yty;\nCAN and DIS markets down yty)";
+    COMMENTS["AM"].identified_qtq = "vs last Qtr Wk6, Identified was $54M\n(-17.5% qtq)";
+    COMMENTS["AM"].performed_yty  = "Total Performed $24.6M ($10.1M Rollover + $14.5M CQ Performed): +12% yty\n(PUB, Com+Ind and LA markets up yty;\nCAN, FSS and DIS markets down yty)";
+    COMMENTS["AM"].performed_qtq  = "vs last Qtr Wk6, Performed was $33.6M\n(-26.6% qtq)";
+    COMMENTS["AM"].converted_yty  = "Converted $9M: +12% yty\nConverted $1.6M in Wk6 — above weekly track";
+    COMMENTS["AM"].converted_qtq  = "vs last Qtr Wk6, Converted was $12.9M\n(-30% qtq)";
+    saveComments();
+  }
+})();
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+renderKPIs(BU_DATA);
+renderBUTable(BU_DATA);
+renderComments();
+renderTop25(TOP25);
+renderCharts(BU_DATA);
+updateCommentStatus();
+</script>
+</body>
+</html>
